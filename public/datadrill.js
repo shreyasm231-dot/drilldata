@@ -1,3 +1,4 @@
+(function(){if(window.__dd)return;window.__dd=1;
 
 var STG=["New request","Appointment scheduled","Contacted","Prescreened","Application in progress","Submitted","Resolved"],
 OUT=["Connected","No answer","Left voicemail","Wrong number","Appointment held"],
@@ -98,3 +99,5 @@ if(f.id==="lf"){var h=H(f.dataset.id);S.ints.push({hh:h.id,type:d.type,date:d.da
 var miss=d.outcome==="No answer"||d.outcome==="Left voicemail";if(d.follow){h.next=d.follow;task(h,miss?"Contact household that did not answer":"Follow up: "+STG[h.stage],d.follow)}else if(miss){h.next=T(3);task(h,"Call back in three days",T(3))}
 save();render()}});
 if(location.hash==="#staff")side="staff";render();
+
+})();
