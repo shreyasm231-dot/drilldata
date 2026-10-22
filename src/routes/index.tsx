@@ -1,58 +1,68 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { DDShell } from "@/components/DDShell";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DataDrill – Manna benefits help & outreach workspace" },
-      { name: "description", content: "Free, confidential help applying for SNAP and food benefits, plus a staff outreach workspace." },
-      { property: "og:title", content: "DataDrill – Manna benefits workspace" },
-      { property: "og:description", content: "Request benefits help and manage outreach in one workspace." },
+      { title: "Sign in – DataDrill" },
+      { name: "description", content: "Sign in to DataDrill for Manna benefits help or the staff outreach workspace." },
+      { property: "og:title", content: "Sign in – DataDrill" },
+      { property: "og:description", content: "Benefits help for residents and an outreach workspace for staff." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Index,
+  component: Login,
 });
 
-function Index() {
-  const follower = useRef<HTMLDivElement>(null);
+function Login() {
+  const nav = useNavigate();
+  const [side, setSide] = useState<"resident" | "staff">("resident");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [stay, setStay] = useState(true);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const s = document.createElement("script");
-    s.src = "/datadrill.js";
-    document.body.appendChild(s);
+    supabase.auth.getUser().then(({ data }) => { if (data.user) nav({ to: "/app" }); });
+  }, [nav]);
 
-    let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y, raf = 0;
-    const move = (e: MouseEvent) => { x = e.clientX; y = e.clientY; };
-    const tick = () => {
-      cx += (x - cx) * 0.12; cy += (y - cy) * 0.12;
-      if (follower.current) follower.current.style.transform = `translate(${cx + 18}px, ${cy + 18}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    addEventListener("mousemove", move);
-    tick();
-    return () => { removeEventListener("mousemove", move); cancelAnimationFrame(raf); };
-  }, []);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(""); setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(false);
+    if (error) return setErr(error.message === "Invalid login credentials" ? "That email and password don't match." : error.message);
+    if (stay) localStorage.removeItem("dd-ephemeral");
+    else localStorage.setItem("dd-ephemeral", "1");
+    sessionStorage.setItem("dd-alive", "1");
+    nav({ to: "/app" });
+  }
 
   return (
-    <div className="dd-root">
-      <div className="dd-bg" aria-hidden>
-        <span className="shape tri" /><span className="shape hex" /><span className="shape ring" />
-        <span className="shape sq" /><span className="shape dia" />
-        <div className="dd-word">DataDrill</div>
-      </div>
-      <div ref={follower} className="dd-follow" aria-hidden>◆ DataDrill</div>
-      <div className="dd-content">
-        <header>
-          <b>DataDrill · Manna</b>
-          <div className="tabs" style={{ margin: 0 }}>
-            <button className="tab" data-a="side" data-v="resident">Resident side</button>
-            <button className="tab" data-a="side" data-v="staff">Staff side</button>
+    <DDShell>
+      <div className="dd-auth">
+        <div className="tabs">
+          <button className="tab" aria-current={side === "resident"} onClick={() => setSide("resident")}>Resident</button>
+          <button className="tab" aria-current={side === "staff"} onClick={() => setSide("staff")}>Staff</button>
+        </div>
+        <form className="panel" onSubmit={submit}>
+          <h2>{side === "resident" ? "Welcome back" : "Staff sign in"}</h2>
+          <p className="mute mb">{side === "resident" ? "Sign in to request help and manage your appointments." : "Sign in to the outreach workspace."}</p>
+          <div className="grid">
+            <label><span>Email (your username)</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></label>
+            <label><span>Password</span><input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" /></label>
+            <label className="dd-check"><input type="checkbox" checked={stay} onChange={(e) => setStay(e.target.checked)} /> Keep me signed in</label>
+            {err && <div className="panel warn">{err}</div>}
+            <button className="btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
           </div>
-        </header>
-        <main id="m" />
+          {side === "resident" && <p className="mute" style={{ marginTop: 18 }}>New here? <Link to="/signup" className="dd-link">Create an account</Link></p>}
+          {side === "staff" && <p className="mute" style={{ marginTop: 18 }}>Staff accounts are set up by your organization.</p>}
+        </form>
       </div>
-    </div>
+    </DDShell>
   );
 }
