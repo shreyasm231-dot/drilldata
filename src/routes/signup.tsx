@@ -44,7 +44,7 @@ function Signup() {
     e.preventDefault();
     setErr("");
     const parsed = schema.safeParse(Object.fromEntries(new FormData(e.currentTarget)));
-    if (!parsed.success) return setErr(parsed.error.issues[0].message);
+    if (!parsed.success) return setErr(parsed.error.issues[0]?.message ?? "Please check the form");
     const { email, password, confirm: _c, ...profile } = parsed.data;
     setBusy(true);
     const { error } = await supabase.auth.signUp({
