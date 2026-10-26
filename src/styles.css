@@ -146,7 +146,7 @@
 /* ===== DataDrill theme: MANNA palette (red / green / yellow / cream) ===== */
 :root{
   --dd-bg: #fcf1e3;
-  --dd-panel: rgb(255 253 250 / .86);
+  --dd-panel: rgb(255 253 250 / .62);
   --dd-ink: #0a0700;
   --dd-mute: #5a4a3a;
   --dd-line: rgb(158 50 35 / .22);
