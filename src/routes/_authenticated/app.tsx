@@ -18,6 +18,11 @@ function AppPage() {
   const [apps, setApps] = useState<Profile[]>([]);
   const [view, setView] = useState<"work" | "apps">("work");
   const [ready, setReady] = useState(false);
+  const [dual, setDual] = useState(false);
+  function switchSide() {
+    localStorage.setItem("dd-side", role === "staff" ? "resident" : "staff");
+    window.location.reload();
+  }
 
   async function signOut() {
     localStorage.removeItem("dd-ephemeral");
@@ -37,7 +42,10 @@ function AppPage() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      const isStaff = roles?.some((r) => r.role === "staff");
+      const hasStaff = !!roles?.some((r) => r.role === "staff");
+      const both = hasStaff && !!roles?.some((r) => r.role === "resident");
+      setDual(both);
+      const isStaff = hasStaff && !(both && localStorage.getItem("dd-side") === "resident");
       setRole(isStaff ? "staff" : "resident");
       if (isStaff) {
         const all = await loadApps();
@@ -83,6 +91,7 @@ function AppPage() {
           <button className={"sm" + (view === "apps" ? " on" : "")} onClick={() => setView("apps")}>Account applications{pending ? ` (${pending})` : ""}</button>
         </>
       )}
+      {dual && <button className="sm" onClick={switchSide}>Switch to {role === "staff" ? "resident" : "staff"} view</button>}
       <button className="sm" onClick={signOut}>Sign out</button>
     </>
   );
